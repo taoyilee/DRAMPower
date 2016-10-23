@@ -60,7 +60,7 @@ enum powerState {
   PS_ACTIVE_PD,
   PS_PRECHARGED_PD_SLOW,
   PS_PRECHARGED_PD_FAST,
-  PS_SELF_REFRESH,
+  PS_SELF_REFRESH
 };
 
 // Create an array to easily iterate over.
@@ -70,7 +70,7 @@ static const powerState All[] = {
   PS_ACTIVE_PD,
   PS_PRECHARGED_PD_SLOW,
   PS_PRECHARGED_PD_FAST,
-  PS_SELF_REFRESH,
+  PS_SELF_REFRESH
 };
 }  // end namespace PS
 
