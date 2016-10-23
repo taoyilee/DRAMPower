@@ -112,13 +112,13 @@ void MemoryPowerModel::power_calc(const MemorySpecification& memSpec,
     double ddrPeriod = t.clkPeriod / static_cast<double>(memArchSpec.dataRate);
 
     // Read IO power is consumed by each DQ (data) and DQS (data strobe) pin
-    energy.read_io_energy = calcIoTermEnergy(c.numberofreads * memArchSpec.burstLength,
+    energy.read_io_energy = calcIoTermEnergy(c.cmdCnt.at(MemCommand::RD) * memArchSpec.burstLength,
                                              ddrPeriod,
                                              power.IO_power,
                                              dqPlusDqsBits);
 
     // Write ODT power is consumed by each DQ (data), DQS (data strobe) and DM
-    energy.write_term_energy = calcIoTermEnergy(c.numberofwrites * memArchSpec.burstLength,
+    energy.write_term_energy = calcIoTermEnergy(c.cmdCnt.at(MemCommand::WR) * memArchSpec.burstLength,
                                                 ddrPeriod,
                                                 power.WR_ODT_power,
                                                 dqPlusDqsPlusMaskBits);
@@ -126,14 +126,14 @@ void MemoryPowerModel::power_calc(const MemorySpecification& memSpec,
     if (memArchSpec.nbrOfRanks > 1) {
       // Termination power consumed in the idle rank during reads on the active
       // rank by each DQ (data) and DQS (data strobe) pin.
-      energy.read_oterm_energy = calcIoTermEnergy(c.numberofreads * memArchSpec.burstLength,
+      energy.read_oterm_energy = calcIoTermEnergy(c.cmdCnt.at(MemCommand::RD) * memArchSpec.burstLength,
                                                   ddrPeriod,
                                                   power.TermRD_power,
                                                   dqPlusDqsBits);
 
       // Termination power consumed in the idle rank during writes on the active
       // rank by each DQ (data), DQS (data strobe) and DM (data mask) pin.
-      energy.write_oterm_energy = calcIoTermEnergy(c.numberofwrites * memArchSpec.burstLength,
+      energy.write_oterm_energy = calcIoTermEnergy(c.cmdCnt.at(MemCommand::WR) * memArchSpec.burstLength,
                                                    ddrPeriod,
                                                    power.TermWR_power,
                                                    dqPlusDqsPlusMaskBits);
@@ -152,11 +152,11 @@ void MemoryPowerModel::power_calc(const MemorySpecification& memSpec,
 
   EnergyDomain vdd0Domain(mps.vdd, t.clkPeriod);
 
-  energy.act_energy       = vdd0Domain.calcTivEnergy(c.numberofacts   * t.RAS          , mps.idd0 - mps.idd3n);
-  energy.pre_energy       = vdd0Domain.calcTivEnergy(c.numberofpres   * (t.RC - t.RAS) , mps.idd0 - mps.idd2n);
-  energy.read_energy      = vdd0Domain.calcTivEnergy(c.numberofreads  * burstCc        , mps.idd4r - mps.idd3n);
-  energy.write_energy     = vdd0Domain.calcTivEnergy(c.numberofwrites * burstCc        , mps.idd4w - mps.idd3n);
-  energy.ref_energy       = vdd0Domain.calcTivEnergy(c.numberofrefs   * t.RFC          , mps.idd5 - mps.idd3n);
+  energy.act_energy       = vdd0Domain.calcTivEnergy(c.cmdCnt.at(MemCommand::ACT)   * t.RAS          , mps.idd0 - mps.idd3n);
+  energy.pre_energy       = vdd0Domain.calcTivEnergy(c.cmdCnt.at(MemCommand::PRE)   * (t.RC - t.RAS) , mps.idd0 - mps.idd2n);
+  energy.read_energy      = vdd0Domain.calcTivEnergy(c.cmdCnt.at(MemCommand::RD)  * burstCc        , mps.idd4r - mps.idd3n);
+  energy.write_energy     = vdd0Domain.calcTivEnergy(c.cmdCnt.at(MemCommand::WR) * burstCc        , mps.idd4w - mps.idd3n);
+  energy.ref_energy       = vdd0Domain.calcTivEnergy(c.cmdCnt.at(MemCommand::REF)   * t.RFC          , mps.idd5 - mps.idd3n);
   energy.pre_stdby_energy = vdd0Domain.calcTivEnergy(c.precycles, mps.idd2n);
   energy.act_stdby_energy = vdd0Domain.calcTivEnergy(c.actcycles, mps.idd3n);
   // Idle energy in the active standby clock cycles
@@ -199,11 +199,11 @@ void MemoryPowerModel::power_calc(const MemorySpecification& memSpec,
   if (memArchSpec.twoVoltageDomains) {
     EnergyDomain vdd2Domain(mps.vdd2, t.clkPeriod);
 
-    energy.act_energy       += vdd2Domain.calcTivEnergy(c.numberofacts   * t.RAS          , mps.idd02 - mps.idd3n2);
-    energy.pre_energy       += vdd2Domain.calcTivEnergy(c.numberofpres   * (t.RC - t.RAS) , mps.idd02 - mps.idd2n2);
-    energy.read_energy      += vdd2Domain.calcTivEnergy(c.numberofreads  * burstCc        , mps.idd4r2 - mps.idd3n2);
-    energy.write_energy     += vdd2Domain.calcTivEnergy(c.numberofwrites * burstCc        , mps.idd4w2 - mps.idd3n2);
-    energy.ref_energy       += vdd2Domain.calcTivEnergy(c.numberofrefs   * t.RFC          , mps.idd52 - mps.idd3n2);
+    energy.act_energy       += vdd2Domain.calcTivEnergy(c.cmdCnt.at(MemCommand::ACT)   * t.RAS          , mps.idd02 - mps.idd3n2);
+    energy.pre_energy       += vdd2Domain.calcTivEnergy(c.cmdCnt.at(MemCommand::PRE)   * (t.RC - t.RAS) , mps.idd02 - mps.idd2n2);
+    energy.read_energy      += vdd2Domain.calcTivEnergy(c.cmdCnt.at(MemCommand::RD)  * burstCc        , mps.idd4r2 - mps.idd3n2);
+    energy.write_energy     += vdd2Domain.calcTivEnergy(c.cmdCnt.at(MemCommand::WR) * burstCc        , mps.idd4w2 - mps.idd3n2);
+    energy.ref_energy       += vdd2Domain.calcTivEnergy(c.cmdCnt.at(MemCommand::REF)   * t.RFC          , mps.idd52 - mps.idd3n2);
     energy.pre_stdby_energy += vdd2Domain.calcTivEnergy(c.precycles, mps.idd2n2);
     energy.act_stdby_energy += vdd2Domain.calcTivEnergy(c.actcycles, mps.idd3n2);
     // Idle energy in the active standby clock cycles
@@ -277,12 +277,12 @@ void MemoryPowerModel::power_print(const MemorySpecification& memSpec, int term,
   streamsize precision = cout.precision();
   cout.precision(0);
   cout << "* Trace Details:" << fixed << endl
-       << endl << "#ACT commands: "                 << c.numberofacts
-       << endl << "#RD + #RDA commands: "           << c.numberofreads
-       << endl << "#WR + #WRA commands: "           << c.numberofwrites
+       << endl << "#ACT commands: "                 << c.cmdCnt.at(MemCommand::ACT)
+       << endl << "#RD + #RDA commands: "           << c.cmdCnt.at(MemCommand::RD)
+       << endl << "#WR + #WRA commands: "           << c.cmdCnt.at(MemCommand::WR)
   /* #PRE commands (precharge all counts a number of #PRE commands equal to the number of active banks) */
-       << endl << "#PRE (+ PREA) commands: "        << c.numberofpres
-       << endl << "#REF commands: "                 << c.numberofrefs
+       << endl << "#PRE (+ PREA) commands: "        << c.cmdCnt.at(MemCommand::PRE)
+       << endl << "#REF commands: "                 << c.cmdCnt.at(MemCommand::REF)
        << endl << "#Active Cycles: "                << c.actcycles
        << endl << "  #Active Idle Cycles: "         << c.idlecycles_act
        << endl << "  #Active Power-Up Cycles: "     << c.pup_act_cycles
@@ -305,8 +305,8 @@ void MemoryPowerModel::power_print(const MemorySpecification& memSpec, int term,
        << endl << "  #Precharged Fast-exit Power-Down Cycles: "                << c.f_pre_pdcycles
        << endl << "  #Precharged Slow-exit Power-Down Cycles: "                << c.s_pre_pdcycles
        << endl << "    #Auto-Refresh Precharged cycles during Self-Refresh: "  << c.sref_ref_pre_cycles
-       << endl << "#Auto-Refresh Cycles: "                                     << c.numberofrefs * memTimingSpec.RFC
-       << endl << "#Self-Refreshes: "                                          << c.numberofsrefs
+       << endl << "#Auto-Refresh Cycles: "                                     << c.cmdCnt.at(MemCommand::REF) * memTimingSpec.RFC
+       << endl << "#Self-Refreshes: "                                          << c.cmdCnt.at(MemCommand::SREN)
        << endl << "#Self-Refresh Cycles: "                                     << c.sref_cycles
        << endl << "----------------------------------------"
        << endl << "Total Trace Length (clock cycles): " << total_cycles

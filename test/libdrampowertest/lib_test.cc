@@ -114,9 +114,9 @@ int main(int argc, char* argv[])
     // Accesing the results:
 
     // Number of issued Commands
-    std::cout << "Number of ACTs: "  << test.counters.numberofacts << endl;
-    std::cout << "Number of RDs: " << test.counters.numberofreads << endl;
-    std::cout << "Number of PREs: " << test.counters.numberofpres << endl << endl;
+    std::cout << "Number of ACTs: "  << test.counters.cmdCnt.at(MemCommand::ACT) << endl;
+    std::cout << "Number of RDs: " << test.counters.cmdCnt.at(MemCommand::RD) << endl;
+    std::cout << "Number of PREs: " << test.counters.cmdCnt.at(MemCommand::PRE) << endl << endl;
     // many other timing parameters in test.mpm.timings
 
     //ENERGIES per Rank

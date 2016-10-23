@@ -183,5 +183,29 @@ class MemCommand {
   unsigned bank;
   int64_t timestamp;
 };
+
+
+// Create an array to easily iterate over.
+static const MemCommand::cmds AllCmds[] = {
+  MemCommand::ACT,
+  MemCommand::RD,
+  MemCommand::WR,
+  MemCommand::PRE,
+  MemCommand::REF,
+  MemCommand::END,
+  MemCommand::RDA,
+  MemCommand::WRA,
+  MemCommand::PREA,
+  MemCommand::PDN_F_PRE,
+  MemCommand::PDN_S_PRE,
+  MemCommand::PDN_F_ACT,
+  MemCommand::PDN_S_ACT,
+  MemCommand::PUP_PRE,
+  MemCommand::PUP_ACT,
+  MemCommand::SREN,
+  MemCommand::SREX,
+  MemCommand::NOP,
+  MemCommand::UNINITIALIZED
+};
 }
 #endif // ifndef MEMCOMMAND_H

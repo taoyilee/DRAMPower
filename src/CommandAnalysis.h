@@ -44,12 +44,37 @@
 #include <iostream>
 #include <deque>
 #include <string>
+#include <map>
 
 #include "MemCommand.h"
 #include "MemorySpecification.h"
 #include "Utils.h"
 
 namespace Data {
+
+namespace PS {
+// Namespace for the enum. This keeps the enum values from spilling into the Data namespace.
+enum powerState {
+  PS_ACTIVE,
+  PS_PRECHARGED,
+  PS_ACTIVE_PD,
+  PS_PRECHARGED_PD_SLOW,
+  PS_PRECHARGED_PD_FAST,
+  PS_SELF_REFRESH,
+};
+
+// Create an array to easily iterate over.
+static const powerState All[] = {
+  PS_ACTIVE,
+  PS_PRECHARGED,
+  PS_ACTIVE_PD,
+  PS_PRECHARGED_PD_SLOW,
+  PS_PRECHARGED_PD_FAST,
+  PS_SELF_REFRESH,
+};
+}  // end namespace PS
+
+
 class CommandAnalysis {
  public:
   // Power-Down and Self-refresh related memory states
@@ -61,17 +86,7 @@ class CommandAnalysis {
   // Returns number of reads, writes, acts, pres and refs in the trace
   CommandAnalysis(const MemorySpecification& memSpec);
 
-  // Number of activate commands
-  int64_t numberofacts;
-  // Number of precharge commands
-  int64_t numberofpres;
-  // Number of reads commands
-  int64_t numberofreads;
-  // Number of writes commands
-  int64_t numberofwrites;
-  // Number of refresh commands
-  int64_t numberofrefs;
-  // Number of precharge cycles
+
   int64_t precycles;
   // Number of active cycles
   int64_t actcycles;
@@ -87,8 +102,6 @@ class CommandAnalysis {
   int64_t f_pre_pdns;
   // Number of slow-exit activate power-downs
   int64_t s_pre_pdns;
-  // Number of self-refresh commands
-  int64_t numberofsrefs;
   // Number of clock cycles in fast-exit activate power-down mode
   int64_t f_act_pdcycles;
   // Number of clock cycles in slow-exit activate power-down mode
@@ -120,6 +133,12 @@ class CommandAnalysis {
   int64_t spup_ref_act_cycles;
   // Number of precharged auto-refresh cycles during self-refresh exit
   int64_t spup_ref_pre_cycles;
+
+  // Power-state cycles: mapping that stores the number of cycles spent in a power-state.
+  std::map<PS::powerState, int64_t> psCycles;
+
+  // Command counters: mapping that stores the number executed commands per type.
+  std::map<const MemCommand::cmds, int64_t> cmdCnt;
 
   // function for clearing counters
   void clearStats(const int64_t timestamp);

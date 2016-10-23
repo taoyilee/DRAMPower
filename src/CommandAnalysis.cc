@@ -80,17 +80,10 @@ CommandAnalysis::CommandAnalysis(const Data::MemorySpecification& memSpec) :
 // function to clear counters
 void CommandAnalysis::clearStats(const int64_t timestamp)
 {
-
-  numberofacts        = 0;
-  numberofpres        = 0;
-  numberofreads       = 0;
-  numberofwrites      = 0;
-  numberofrefs        = 0;
   f_act_pdns          = 0;
   s_act_pdns          = 0;
   f_pre_pdns          = 0;
   s_pre_pdns          = 0;
-  numberofsrefs       = 0;
 
   actcycles           = 0;
   precycles           = 0;
@@ -108,6 +101,16 @@ void CommandAnalysis::clearStats(const int64_t timestamp)
   spup_ref_pre_cycles = 0;
   idlecycles_act      = 0;
   idlecycles_pre      = 0;
+
+  // Reset the power-state counters
+  for (const auto ps : PS::All) {
+    psCycles[ps] = 0;
+  }
+
+  // Reset the command counters
+  for (const auto cmd : AllCmds) {
+    cmdCnt[cmd] = 0;
+  }
 
   // reset count references to timestamp so that they are moved
   // to start of next stats generation
