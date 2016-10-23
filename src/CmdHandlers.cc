@@ -41,6 +41,12 @@ using std::max;
 
 using namespace Data;
 
+void CommandAnalysis::transition(int64_t timestamp, PS::PowerState nextState)
+{
+  psCycles[ps] += timestamp - psEntryCycle;
+  psEntryCycle = timestamp;
+  ps = nextState;
+}
 
 int64_t zero_guard(int64_t cycles_in, const char* warning)
 {
@@ -68,6 +74,8 @@ void CommandAnalysis::handleAct(unsigned bank, int64_t timestamp)
     if (nActiveBanks() == 0) {
       // Here a memory state transition to ACT is happening. Save the
       // number of cycles in precharge state (increment the counter).
+      transition(timestamp, PS::PS_ACTIVE);
+
       first_act_cycle = timestamp;
       precycles += zero_guard(timestamp - last_pre_cycle, "1 last_pre_cycle is in the future.");
       idle_pre_update(timestamp, latest_pre_cycle);
@@ -116,6 +124,14 @@ void CommandAnalysis::handleRef(unsigned bank, int64_t timestamp)
   // precharged cycles before refresh. Change memory state to 0.
   printWarningIfActive("One or more banks are active! REF requires all banks to be precharged.", MemCommand::REF, timestamp, bank);
   cmdCnt[MemCommand::REF]++;
+
+  // On REF, the memory transitions to an active state for RFC - RP cycles.
+  transition(timestamp, PS::PS_ACTIVE);
+  // And back to precharged.
+  transition(timestamp + memSpec.memTimingSpec.RFC - memSpec.memTimingSpec.RP, PS::PS_PRECHARGED);
+  noCommandsExpectedUntil = timestamp + memSpec.memTimingSpec.RFC;
+
+
   idle_pre_update(timestamp, latest_pre_cycle);
   first_act_cycle  = timestamp;
   precycles       += zero_guard(timestamp - last_pre_cycle, "2 last_pre_cycle is in the future.");
@@ -148,6 +164,7 @@ void CommandAnalysis::handlePre(unsigned bank, int64_t timestamp)
       // This is the last active bank. Therefore, here a memory state
       // transition to PRE is happening. Let's increment the active cycle
       // counter.
+      transition(timestamp, PS::PS_PRECHARGED);
       actcycles += zero_guard(timestamp - first_act_cycle, "first_act_cycle is in the future.");
       last_pre_cycle = timestamp;
       idle_act_update(latest_read_cycle, latest_write_cycle, latest_act_cycle, timestamp);
@@ -173,6 +190,7 @@ void CommandAnalysis::handlePreA(unsigned bank, int64_t timestamp)
   if (nActiveBanks() > 0) {
     // Active banks are being precharged
     cmdCnt[MemCommand::PRE] += nActiveBanks();
+    transition(timestamp, PS::PS_PRECHARGED);
     // At least one bank was active, therefore the current memory state is
     // ACT. Since all banks are being precharged a memory state transition
     // to PRE is happening. Add to the counter the amount of cycles the
@@ -201,6 +219,8 @@ void CommandAnalysis::handlePdnFAct(unsigned bank, int64_t timestamp)
   // after powering-up. Update active and active idle cycles.
   printWarningIfNotActive("All banks are precharged! Incorrect use of Active Power-Down.", MemCommand::PDN_F_ACT, timestamp, bank);
   cmdCnt[MemCommand::PDN_F_ACT]++;
+  transition(timestamp, PS::PS_ACTIVE_PD);
+
   last_bank_state = bank_state;
   pdn_cycle  = timestamp;
   actcycles += zero_guard(timestamp - first_act_cycle, "first_act_cycle is in the future.");
@@ -210,13 +230,17 @@ void CommandAnalysis::handlePdnFAct(unsigned bank, int64_t timestamp)
 
 void CommandAnalysis::handlePdnSAct(unsigned bank, int64_t timestamp)
 {
+  // <DEPRECATED> Slow-exit active power-down does not exist. Support for this command might be removed in the future. </DEPRECATED>
   // If command is slow-exit active power-down - update number of
   // power-downs, set the power-down cycle and the memory mode to
   // slow-exit active power-down. Save states of all the banks from
   // the cycle before entering active power-down, to be returned to
   // after powering-up. Update active and active idle cycles.
   printWarningIfNotActive("All banks are precharged! Incorrect use of Active Power-Down.", MemCommand::PDN_S_ACT, timestamp, bank);
+
   cmdCnt[MemCommand::PDN_S_ACT]++;
+  transition(timestamp, PS::PS_ACTIVE_PD);
+
   last_bank_state = bank_state;
   pdn_cycle  = timestamp;
   actcycles += zero_guard(timestamp - first_act_cycle, "first_act_cycle is in the future.");
@@ -232,6 +256,7 @@ void CommandAnalysis::handlePdnFPre(unsigned bank, int64_t timestamp)
   // idle cycles.
   printWarningIfActive("One or more banks are active! Incorrect use of Precharged Power-Down.", MemCommand::PDN_F_PRE, timestamp, bank);
   cmdCnt[MemCommand::PDN_F_PRE]++;
+  transition(timestamp, PS::PS_PRECHARGED_PD_FAST);
   pdn_cycle  = timestamp;
   precycles += zero_guard(timestamp - last_pre_cycle, "3 last_pre_cycle is in the future.");
   idle_pre_update(timestamp, latest_pre_cycle);
@@ -246,6 +271,7 @@ void CommandAnalysis::handlePdnSPre(unsigned bank, int64_t timestamp)
   // idle cycles.
   printWarningIfActive("One or more banks are active! Incorrect use of Precharged Power-Down.",  MemCommand::PDN_S_PRE, timestamp, bank);
   cmdCnt[MemCommand::PDN_S_PRE]++;
+  transition(timestamp, PS::PS_PRECHARGED_PD_SLOW);
   pdn_cycle  = timestamp;
   precycles += zero_guard(timestamp - last_pre_cycle, "4 last_pre_cycle is in the future.");
   idle_pre_update(timestamp, latest_pre_cycle);
@@ -261,11 +287,16 @@ void CommandAnalysis::handlePupAct(int64_t timestamp)
   // before entering power-down.
   const MemTimingSpec& t = memSpec.memTimingSpec;
 
+  cmdCnt[MemCommand::PUP_ACT]++;
+  transition(timestamp, PS::PS_ACTIVE);
+  noCommandsExpectedUntil = timestamp + t.XP;
+
   if (mem_state == CommandAnalysis::MS_PDN_F_ACT) {
     f_act_pdcycles  += zero_guard(timestamp - pdn_cycle, "pdn_cycle is in the future.");
     pup_act_cycles  += t.XP;
     latest_act_cycle = timestamp;
   } else if (mem_state == CommandAnalysis::MS_PDN_S_ACT) {
+    // <DEPRECATED> Slow-exit active power-down does not exist. Support for this command might be removed in the future. </DEPRECATED>
     s_act_pdcycles += zero_guard(timestamp - pdn_cycle, "pdn_cycle is in the future.");
     if (memSpec.memArchSpec.dll == false) {
       pup_act_cycles  += t.XP;
@@ -289,10 +320,20 @@ void CommandAnalysis::handlePupPre(int64_t timestamp)
   // and power-up cycles and the latest and last pre cycle.
   const MemTimingSpec& t = memSpec.memTimingSpec;
   if (mem_state == CommandAnalysis::MS_PDN_F_PRE) {
+
+    cmdCnt[MemCommand::PUP_PRE]++;
+    transition(timestamp, PS::PS_PRECHARGED);
+    noCommandsExpectedUntil = timestamp + t.XP;
+
     f_pre_pdcycles  += zero_guard(timestamp - pdn_cycle, "pdn_cycle is in the future.");
     pup_pre_cycles  += t.XP;
     latest_pre_cycle = timestamp;
   } else if (mem_state == CommandAnalysis::MS_PDN_S_PRE) {
+
+    cmdCnt[MemCommand::PUP_PRE]++;
+    transition(timestamp, PS::PS_PRECHARGED);
+    noCommandsExpectedUntil = timestamp + t.XP;
+
     s_pre_pdcycles += zero_guard(timestamp - pdn_cycle, "pdn_cycle is in the future.");
     if (memSpec.memArchSpec.dll == false) {
       pup_pre_cycles  += t.XP;
@@ -314,7 +355,10 @@ void CommandAnalysis::handleSREn(unsigned bank, int64_t timestamp)
   // set memory state to SREF, update precharge and idle precharge
   // cycles and set the self-refresh cycle.
   printWarningIfActive("One or more banks are active! SREF requires all banks to be precharged.", MemCommand::SREN, timestamp, bank);
+
   cmdCnt[MemCommand::SREN]++;
+  transition(timestamp, PS::PS_PRECHARGED_PD_SLOW);
+
   sref_cycle = timestamp;
   sref_cycle_window = timestamp;
   sref_ref_pre_cycles_window = 0;

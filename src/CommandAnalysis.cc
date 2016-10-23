@@ -107,6 +107,10 @@ void CommandAnalysis::clearStats(const int64_t timestamp)
     cmdCnt[cmd] = 0;
   }
 
+  ps = PS::PS_PRECHARGED;
+  psEntryCycle = 0;
+  noCommandsExpectedUntil = 0;
+
   // reset count references to timestamp so that they are moved
   // to start of next stats generation
   first_act_cycle     = timestamp;

@@ -54,7 +54,7 @@ namespace Data {
 
 namespace PS {
 // Namespace for the enum. This keeps the enum values from spilling into the Data namespace.
-enum powerState {
+enum PowerState {
   PS_ACTIVE,
   PS_PRECHARGED,
   PS_ACTIVE_PD,
@@ -64,7 +64,7 @@ enum powerState {
 };
 
 // Create an array to easily iterate over.
-static const powerState All[] = {
+static const PowerState All[] = {
   PS_ACTIVE,
   PS_PRECHARGED,
   PS_ACTIVE_PD,
@@ -127,7 +127,17 @@ class CommandAnalysis {
   int64_t spup_ref_pre_cycles;
 
   // Power-state cycles: mapping that stores the number of cycles spent in a power-state.
-  std::map<PS::powerState, int64_t> psCycles;
+  std::map<PS::PowerState, int64_t> psCycles;
+
+  // Current power state
+  PS::PowerState ps;
+
+  // The timestamp at which we entered the current power state
+  int64_t psEntryCycle;
+
+  // The earliest time at which we expect the next command.
+  // Any command that arrives earlier than this time violates timing constraints.
+  int64_t noCommandsExpectedUntil;
 
   // Command counters: mapping that stores the number executed commands per type.
   std::map<const MemCommand::cmds, int64_t> cmdCnt;
@@ -246,6 +256,7 @@ class CommandAnalysis {
   void printWarningIfNotActive(const std::string& warning, int type, int64_t timestamp, unsigned bank);
   void printWarningIfPoweredDown(const std::string& warning, int type, int64_t timestamp, unsigned bank);
   void printWarning(const std::string& warning, int type, int64_t timestamp, unsigned bank);
+  void transition(int64_t timestamp, PS::PowerState nextState);
 };
 }
 #endif // ifndef COMMAND_TIMINGS_H
