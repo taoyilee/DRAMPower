@@ -293,11 +293,11 @@ void MemoryPowerModel::power_print(const MemorySpecification& memSpec, int term,
        << endl << "    #Auto-Refresh Precharged cycles during Self-Refresh Power-Up: " << c.spup_ref_pre_cycles
        << endl << "  #Self-Refresh Power-Up Cycles: "                          << c.spup_cycles
        << endl << "Total Idle Cycles (Active + Precharged): "                  << c.idlecycles_act + c.idlecycles_pre
-       << endl << "#Power-Downs: "                                             << c.f_act_pdns +  c.s_act_pdns + c.f_pre_pdns + c.s_pre_pdns
-       << endl << "  #Active Fast-exit Power-Downs: "                          << c.f_act_pdns
-       << endl << "  #Active Slow-exit Power-Downs: "                          << c.s_act_pdns
-       << endl << "  #Precharged Fast-exit Power-Downs: "                      << c.f_pre_pdns
-       << endl << "  #Precharged Slow-exit Power-Downs: "                      << c.s_pre_pdns
+       << endl << "#Power-Downs: "                                             << c.cmdCnt.at(MemCommand::PDN_F_ACT) +  c.cmdCnt.at(MemCommand::PDN_S_ACT) + c.cmdCnt.at(MemCommand::PDN_F_PRE) + c.cmdCnt.at(MemCommand::PDN_S_PRE)
+       << endl << "  #Active Fast-exit Power-Downs: "                          << c.cmdCnt.at(MemCommand::PDN_F_ACT)
+       << endl << "  #Active Slow-exit Power-Downs: "                          << c.cmdCnt.at(MemCommand::PDN_S_ACT)
+       << endl << "  #Precharged Fast-exit Power-Downs: "                      << c.cmdCnt.at(MemCommand::PDN_F_PRE)
+       << endl << "  #Precharged Slow-exit Power-Downs: "                      << c.cmdCnt.at(MemCommand::PDN_S_PRE)
        << endl << "#Power-Down Cycles: "                                       << c.f_act_pdcycles + c.s_act_pdcycles + c.f_pre_pdcycles + c.s_pre_pdcycles
        << endl << "  #Active Fast-exit Power-Down Cycles: "                    << c.f_act_pdcycles
        << endl << "  #Active Slow-exit Power-Down Cycles: "                    << c.s_act_pdcycles

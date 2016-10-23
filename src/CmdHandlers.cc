@@ -200,7 +200,6 @@ void CommandAnalysis::handlePdnFAct(unsigned bank, int64_t timestamp)
   // the cycle before entering active power-down, to be returned to
   // after powering-up. Update active and active idle cycles.
   printWarningIfNotActive("All banks are precharged! Incorrect use of Active Power-Down.", MemCommand::PDN_F_ACT, timestamp, bank);
-  f_act_pdns++;
   cmdCnt[MemCommand::PDN_F_ACT]++;
   last_bank_state = bank_state;
   pdn_cycle  = timestamp;
@@ -217,7 +216,6 @@ void CommandAnalysis::handlePdnSAct(unsigned bank, int64_t timestamp)
   // the cycle before entering active power-down, to be returned to
   // after powering-up. Update active and active idle cycles.
   printWarningIfNotActive("All banks are precharged! Incorrect use of Active Power-Down.", MemCommand::PDN_S_ACT, timestamp, bank);
-  s_act_pdns++;
   cmdCnt[MemCommand::PDN_S_ACT]++;
   last_bank_state = bank_state;
   pdn_cycle  = timestamp;
@@ -233,7 +231,6 @@ void CommandAnalysis::handlePdnFPre(unsigned bank, int64_t timestamp)
   // fast-exit precahrged power-down. Update precharged and precharged
   // idle cycles.
   printWarningIfActive("One or more banks are active! Incorrect use of Precharged Power-Down.", MemCommand::PDN_F_PRE, timestamp, bank);
-  f_pre_pdns++;
   cmdCnt[MemCommand::PDN_F_PRE]++;
   pdn_cycle  = timestamp;
   precycles += zero_guard(timestamp - last_pre_cycle, "3 last_pre_cycle is in the future.");
@@ -248,7 +245,6 @@ void CommandAnalysis::handlePdnSPre(unsigned bank, int64_t timestamp)
   // slow-exit precahrged power-down. Update precharged and precharged
   // idle cycles.
   printWarningIfActive("One or more banks are active! Incorrect use of Precharged Power-Down.",  MemCommand::PDN_S_PRE, timestamp, bank);
-  s_pre_pdns++;
   cmdCnt[MemCommand::PDN_S_PRE]++;
   pdn_cycle  = timestamp;
   precycles += zero_guard(timestamp - last_pre_cycle, "4 last_pre_cycle is in the future.");

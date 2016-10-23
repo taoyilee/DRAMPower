@@ -80,11 +80,6 @@ CommandAnalysis::CommandAnalysis(const Data::MemorySpecification& memSpec) :
 // function to clear counters
 void CommandAnalysis::clearStats(const int64_t timestamp)
 {
-  f_act_pdns          = 0;
-  s_act_pdns          = 0;
-  f_pre_pdns          = 0;
-  s_pre_pdns          = 0;
-
   actcycles           = 0;
   precycles           = 0;
   f_act_pdcycles      = 0;

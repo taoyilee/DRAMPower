@@ -94,14 +94,6 @@ class CommandAnalysis {
   int64_t idlecycles_act;
   // Number of Idle cycles in the precharge state
   int64_t idlecycles_pre;
-  // Number of fast-exit activate power-downs
-  int64_t f_act_pdns;
-  // Number of slow-exit activate power-downs
-  int64_t s_act_pdns;
-  // Number of fast-exit precharged power-downs
-  int64_t f_pre_pdns;
-  // Number of slow-exit activate power-downs
-  int64_t s_pre_pdns;
   // Number of clock cycles in fast-exit activate power-down mode
   int64_t f_act_pdcycles;
   // Number of clock cycles in slow-exit activate power-down mode
