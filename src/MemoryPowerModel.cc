@@ -99,6 +99,8 @@ void MemoryPowerModel::power_calc(const MemorySpecification& memSpec,
   // How long a single burst takes, measured in command-clock cycles.
   int64_t burstCc = memArchSpec.burstLength / memArchSpec.dataRate;
 
+  initEnergyPerCmd(memSpec);
+
   // IO and Termination Power measures are included, if required.
   if (term) {
     io_term_power(memSpec);
@@ -408,4 +410,31 @@ double MemoryPowerModel::calcIoTermEnergy(int64_t cycles, double period, double 
 double EnergyDomain::calcTivEnergy(int64_t cycles, double current) const
 {
   return static_cast<double>(cycles) * clkPeriod * current * voltage;
+}
+
+void MemoryPowerModel::initEnergyPerCmd(const MemorySpecification& memSpec)
+{
+  const MemTimingSpec& t                 = memSpec.memTimingSpec;
+  // const MemArchitectureSpec& memArchSpec = memSpec.memArchSpec;
+  const MemPowerSpec&  mps               = memSpec.memPowerSpec;
+
+  EnergyDomain dom(mps.vdd, t.clkPeriod);
+
+  // Energy use during IDD0 test: IDD0 * V * tRC (Test consists of an ACT and a PRE command)
+  double EIdd0   = dom.calcTivEnergy(t.RC, mps.idd0);
+  // Background consists of: active background current for tRAS cycles,
+  // and precharged background current for tRC - tRAS cycles.
+  double EIdd0Bg = dom.calcTivEnergy(t.RAS, mps.idd3n) + dom.calcTivEnergy(t.RC - t.RAS, mps.idd2n);
+  // Energy of the activate + precharge command:
+  double EActPlusPre = EIdd0 - EIdd0Bg;
+
+  // Estimate energy of ACT and PRE command, by splitting the contribution of both
+  // based on the time spent in an active or precharged state, respectively:
+  energyPerCmd[MemCommand::ACT] = EActPlusPre *        static_cast<double>(t.RAS) / static_cast<double>(t.RC);
+  energyPerCmd[MemCommand::PRE] = EActPlusPre * (1.0 - static_cast<double>(t.RAS) / static_cast<double>(t.RC));
+
+  // TODO:
+  // Add the other commands.
+  // Make EnergyDomain an input, and have it store a specific version of the
+  // idd currents, based on the domain (e.g. idd2n for domain 1, idd2n2 for domain 2, etc.)
 }

@@ -167,6 +167,10 @@ class MemoryPowerModel {
   Power  power;
 
  private:
+  // Energy cost per command type
+  std::map<const MemCommand::cmds, double> energyPerCmd;
+  void initEnergyPerCmd(const MemorySpecification& memSpec);
+
   double calcIoTermEnergy(int64_t cycles, double period, double power, int64_t numBits) const;
 };
 
